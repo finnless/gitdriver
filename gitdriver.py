@@ -6,7 +6,11 @@ import argparse
 import subprocess
 import yaml
 
+import html2text
+
 from drive import GoogleDrive, DRIVE_RW_SCOPE
+
+FILENAME = "README.md"
 
 def parse_args():
     p = argparse.ArgumentParser()
@@ -48,7 +52,7 @@ def main():
 
     # Iterate over the revisions (from oldest to newest).
     for rev in gd.revisions(opts.docid):
-        with open('content', 'w') as fd:
+        with open(FILENAME, 'w') as fd:
             if 'exportLinks' in rev and not opts.raw:
                 # If the file provides an 'exportLinks' dictionary,
                 # download the requested MIME type.
@@ -60,11 +64,11 @@ def main():
                 raise KeyError('unable to download revision')
 
             # Write file content into local file.
-            for chunk in r.iter_content():
-                fd.write(chunk)
+            for chunk in r.iter_content(None):
+                fd.write(html2text.html2text(chunk))
 
         # Commit changes to repository.
-        subprocess.call(['git', 'add', 'content'])
+        subprocess.call(['git', 'add', FILENAME])
         subprocess.call(['git', 'commit', '-m',
             'revision from %s' % rev['modifiedDate']])
 
